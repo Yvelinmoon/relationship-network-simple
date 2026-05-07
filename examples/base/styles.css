@@ -35,7 +35,11 @@ body {
   height: 100%;
   cursor: grab;
   isolation: isolate;
-  background: #0a0608;
+  background:
+    radial-gradient(circle at 18% 76%, rgba(72, 118, 180, 0.22), transparent 28%),
+    radial-gradient(circle at 78% 20%, rgba(150, 70, 120, 0.18), transparent 30%),
+    radial-gradient(circle at 48% 45%, rgba(190, 145, 85, 0.10), transparent 34%),
+    linear-gradient(135deg, #06070d 0%, #12090d 48%, #050609 100%);
 }
 
 .graph-bg,
@@ -57,8 +61,10 @@ body {
 
 .graph-bg-overlay {
   background:
-    radial-gradient(circle at 50% 38%, rgba(10, 6, 8, 0.08), rgba(5, 4, 6, 0.22) 66%, rgba(3, 3, 4, 0.48) 100%),
-    linear-gradient(90deg, rgba(4, 3, 4, 0.38), rgba(8, 4, 6, 0.12) 45%, rgba(4, 3, 4, 0.42));
+    radial-gradient(circle at 20% 78%, rgba(80, 135, 210, 0.18), transparent 26%),
+    radial-gradient(circle at 78% 22%, rgba(180, 70, 120, 0.15), transparent 28%),
+    radial-gradient(circle at 50% 42%, rgba(245, 190, 110, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(4, 5, 9, 0.08), rgba(3, 3, 5, 0.28));
 }
 
 #graph-root:active {

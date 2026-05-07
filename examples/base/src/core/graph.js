@@ -204,12 +204,13 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       transparent: true,
       opacity: 0,
       depthWrite: false,
+      depthTest: false,
     });
     const sprite = new THREE.Sprite(material);
     sprite.position.set(0, 0, meta.size * 0.08);
-    sprite.scale.set(meta.size * 1.42, meta.size * 1.42, 1);
-    sprite.renderOrder = 26;
-    sprite.userData.baseOpacity = 0.88;
+    sprite.scale.set(meta.size * 1.9, meta.size * 1.9, 1);
+    sprite.renderOrder = 60;
+    sprite.userData.baseOpacity = 1;
 
     textureLoader.load(
       node.image,
@@ -305,7 +306,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       const material = new THREE.MeshBasicMaterial({
         color: meta.color,
         transparent: true,
-        opacity: 0.72,
+        opacity: node.image ? 0.08 : 0.72,
         depthWrite: false,
       });
       const mesh = new THREE.Mesh(geometry, material);
@@ -496,7 +497,8 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
   function applyImageLayerState(mesh, opacity, reveal) {
     const imageSprite = mesh.userData.imageSprite;
     if (imageSprite) {
-      imageSprite.material.opacity = imageSprite.userData.baseOpacity * Math.min(opacity + 0.08, 1) * reveal;
+      const imageOpacity = opacity >= 0.4 ? 1 : Math.max(opacity, 0.08);
+      imageSprite.material.opacity = imageSprite.userData.baseOpacity * imageOpacity * reveal;
     }
   }
 
@@ -519,7 +521,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
 
       if (!activeIds.size) {
         mesh.scale.setScalar(baseVisual.scale * introScale);
-        mesh.material.opacity = Math.min(baseVisual.opacity, 0.86) * reveal;
+        mesh.material.opacity = (mesh.userData.node.image ? 0.08 : Math.min(baseVisual.opacity, 0.86)) * reveal;
         mesh.material.transparent = true;
         applyImageLayerState(mesh, baseVisual.opacity, reveal);
         if (labelElement) {
@@ -564,7 +566,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
               : (hasIsolatedFocus ? 0 : baseVisual.labelOpacity * 0.48);
 
       mesh.scale.setScalar(scale * introScale);
-      mesh.material.opacity = Math.min(opacity, 0.92) * reveal;
+      mesh.material.opacity = (mesh.userData.node.image ? 0.08 : Math.min(opacity, 0.92)) * reveal;
       mesh.material.transparent = true;
       applyImageLayerState(mesh, opacity, reveal);
       if (labelElement) {

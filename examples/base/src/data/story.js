@@ -1,7 +1,7 @@
 // Base character-only dataset. Replace this file for each cast.
 
 export const TYPE_META = {
-  character: { label: "角色", icon: "👤", size: 42, depth: -8 },
+  character: { label: "角色", icon: "👤", size: 28, depth: -8 },
 };
 
 const nodes = [

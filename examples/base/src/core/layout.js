@@ -4,7 +4,7 @@ import * as THREE from "../../vendor/three/three.module.js?v=character-network-s
 
 const CHARACTER_RINGS = {
   root: { radius: 68, color: 0xc0a060, accent: 0xe0d0a0, z: -168 },
-  character: { innerRadius: 118, outerRadius: 360, color: 0xc0a060, accent: 0xe0c080, z: -174 },
+  character: { innerRadius: 160, outerRadius: 520, color: 0xc0a060, accent: 0xe0c080, z: -174 },
 };
 
 function angleToPosition(radius, angleDeg) {
@@ -35,7 +35,7 @@ function placeArcCharacters(characters, { angle, spread, radius, wave = 8, radia
   const positions = new Map();
   if (!characters.length) return positions;
 
-  const adjustedSpread = Math.min(spread, Math.max(18, 18 + characters.length * 12));
+  const adjustedSpread = Math.min(spread, Math.max(36, 30 + characters.length * 18));
   const step = characters.length === 1 ? 0 : adjustedSpread / (characters.length - 1);
   const start = angle + adjustedSpread / 2;
 
@@ -54,10 +54,10 @@ function createCharacterPositions(characters, degrees) {
   const core = sorted.filter((node) => (node.importance ?? 0) >= 80);
   const outer = sorted.filter((node) => (node.importance ?? 0) < 80);
 
-  placeArcCharacters(core, { angle: 0, spread: Math.min(220, 60 + core.length * 30), radius: 170 }).forEach((v, k) => positions.set(k, v));
+  placeArcCharacters(core, { angle: 0, spread: Math.min(260, 80 + core.length * 36), radius: 260, wave: 14, radialStep: 34 }).forEach((v, k) => positions.set(k, v));
   core.forEach((node) => nodeLevels.set(node.id, "character-core"));
 
-  placeArcCharacters(outer, { angle: 180, spread: Math.min(280, 60 + outer.length * 25), radius: 290 }).forEach((v, k) => positions.set(k, v));
+  placeArcCharacters(outer, { angle: 180, spread: Math.min(320, 90 + outer.length * 32), radius: 450, wave: 18, radialStep: 42 }).forEach((v, k) => positions.set(k, v));
   outer.forEach((node) => nodeLevels.set(node.id, "character-outer"));
 
   return { positions, nodeLevels };
