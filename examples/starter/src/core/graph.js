@@ -19,69 +19,21 @@ const RELATION_STYLE = {
     bendY: 0.18,
     opacity: [0.065, 0.46, 0.12],
   },
-  "character-event": {
-    color: 0x7a3a3a,
-    activeColor: 0xd86868,
-    cssColor: "#d86868",
-    lift: 34,
-    bowX: -16,
-    bendY: 0.1,
-    opacity: [0.08, 0.31, 0.7],
-  },
-  "event-event": {
-    color: 0x4a3040,
-    activeColor: 0xa86880,
-    cssColor: "#a86880",
-    lift: 54,
-    bowX: 0,
-    bendY: 0.04,
-    opacity: [0.065, 0.22, 0.84],
-  },
-  "character-world": {
-    color: 0x4a6060,
-    activeColor: 0x90b8b8,
-    cssColor: "#90b8b8",
-    lift: 26,
-    bowX: 12,
-    bendY: 0.08,
-    opacity: [0.08, 0.34, 0.16],
-  },
-  "event-world": {
-    color: 0x5a4030,
-    activeColor: 0xa88060,
-    cssColor: "#a88060",
-    lift: 30,
-    bowX: 28,
-    bendY: 0.06,
-    opacity: [0.065, 0.2, 0.58],
-  },
-  "world-world": {
-    color: 0x7a6a40,
-    activeColor: 0xc8a860,
-    cssColor: "#c8a860",
-    lift: 16,
-    bowX: 72,
-    bendY: 0.14,
-    opacity: [0.18, 0.12, 0.07],
-  },
 };
 
-
-const FALLBACK_FACTION_STYLES = {
+const FALLBACK_CHARACTER_GROUP_STYLES = {
   core: { color: 0xc0a060, priority: 1 },
-  opposition: { color: 0xa05060, priority: 2 },
+  support: { color: 0x7fa0c8, priority: 2 },
+  conflict: { color: 0xa05060, priority: 3 },
   neutral: { color: 0x5a6070, priority: 99 },
 };
 
 const NEUTRAL_NODE_COLORS = {
-  event: 0x6a6378,
-  place: 0x60706a,
-  object: 0x9a8760,
-  faction: 0x5a6070,
+  character: 0xc0a060,
 };
 
-let FACTION_STYLES = FALLBACK_FACTION_STYLES;
-let FACTION_IDS = new Set(Object.keys(FACTION_STYLES));
+let CHARACTER_GROUP_STYLES = FALLBACK_CHARACTER_GROUP_STYLES;
+let CHARACTER_GROUP_IDS = new Set(Object.keys(CHARACTER_GROUP_STYLES));
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
@@ -102,14 +54,14 @@ function parseColor(value, fallback) {
   return fallback;
 }
 
-function normalizeFactionStyles(factions) {
-  const entries = Object.entries(factions ?? {});
-  if (!entries.length) return FALLBACK_FACTION_STYLES;
+function normalizeCharacterGroupStyles(groups) {
+  const entries = Object.entries(groups ?? {});
+  if (!entries.length) return FALLBACK_CHARACTER_GROUP_STYLES;
   return Object.fromEntries(
     entries.map(([id, value], index) => [
       id,
       {
-        color: parseColor(value?.color, NEUTRAL_NODE_COLORS.faction),
+        color: parseColor(value?.color, NEUTRAL_NODE_COLORS.character),
         priority: value?.priority ?? index + 1,
       },
     ]),
@@ -118,14 +70,14 @@ function normalizeFactionStyles(factions) {
 
 export function createGraphController({ THREE, groups, controls, typeMeta, graphState }) {
   const { haloGroup, edgeGroup, nodeGroup, labelGroup } = groups;
-  FACTION_STYLES = normalizeFactionStyles(graphState.getFactions?.() ?? FALLBACK_FACTION_STYLES);
-  FACTION_IDS = new Set(Object.keys(FACTION_STYLES));
+  CHARACTER_GROUP_STYLES = normalizeCharacterGroupStyles(graphState.getCharacterGroups?.() ?? FALLBACK_CHARACTER_GROUP_STYLES);
+  CHARACTER_GROUP_IDS = new Set(Object.keys(CHARACTER_GROUP_STYLES));
   const worldTarget = new THREE.Vector3();
   const textureLoader = new THREE.TextureLoader();
   textureLoader.crossOrigin = "anonymous";
   const orbAlphaTexture = makeCircleAlphaTexture();
   const glintTexture = makeGlintTexture();
-  const factionAffiliations = buildFactionAffiliations();
+  const characterGroupAffiliations = buildCharacterGroupAffiliations();
 
   let graph = null;
   let hoveredNode = null;
@@ -153,48 +105,29 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
   }
 
 
-  function buildFactionAffiliations() {
+  function buildCharacterGroupAffiliations() {
     const affiliations = new Map();
-
-    graphState.getAllEdges?.().forEach((edge) => {
-      const sourceFaction = FACTION_IDS.has(edge.source);
-      const targetFaction = FACTION_IDS.has(edge.target);
-      if (sourceFaction === targetFaction) {
-        return;
-      }
-
-      const nodeId = sourceFaction ? edge.target : edge.source;
-      const factionId = sourceFaction ? edge.source : edge.target;
-      if (!affiliations.has(nodeId)) {
-        affiliations.set(nodeId, []);
-      }
-      affiliations.get(nodeId).push(factionId);
+    graphState.getNodes?.().forEach((node) => {
+      const groupId = node.group ?? "core";
+      if (CHARACTER_GROUP_IDS.has(groupId)) affiliations.set(node.id, [groupId]);
     });
-
-    affiliations.forEach((ids, nodeId) => {
-      affiliations.set(nodeId, [...new Set(ids)].sort((left, right) => FACTION_STYLES[left].priority - FACTION_STYLES[right].priority));
-    });
-
     return affiliations;
   }
 
-  function getFactionIdsForNode(node) {
-    if (FACTION_IDS.has(node.id)) {
-      return [node.id];
-    }
-    return factionAffiliations.get(node.id) ?? [];
+  function getCharacterGroupIdsForNode(node) {
+    return characterGroupAffiliations.get(node.id) ?? [];
   }
 
-  function getPrimaryFactionStyle(node) {
-    const factionId = getFactionIdsForNode(node)[0];
-    return factionId ? FACTION_STYLES[factionId] : null;
+  function getPrimaryCharacterGroupStyle(node) {
+    const groupId = getCharacterGroupIdsForNode(node)[0];
+    return groupId ? CHARACTER_GROUP_STYLES[groupId] : null;
   }
 
   function getNodeVisualMeta(node) {
-    const meta = typeMeta[node.type];
-    const factionStyle = getPrimaryFactionStyle(node);
-    const neutralColor = NEUTRAL_NODE_COLORS[node.type];
-    return { ...meta, color: factionStyle?.color ?? neutralColor ?? meta.color };
+    const meta = typeMeta[node.type] ?? typeMeta.character;
+    const groupStyle = getPrimaryCharacterGroupStyle(node);
+    const neutralColor = NEUTRAL_NODE_COLORS.character;
+    return { ...meta, color: groupStyle?.color ?? neutralColor ?? meta.color };
   }
 
   function makeNodeLabel(node) {
@@ -367,32 +300,15 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
 
 
   function buildCurvePointsForRelation(relation, start, end) {
-    const style = RELATION_STYLE[relation] ?? RELATION_STYLE["world-world"];
+    const style = RELATION_STYLE[relation] ?? RELATION_STYLE["character-character"];
     const midpoint = start.clone().lerp(end, 0.5);
     const chord = end.clone().sub(start);
     const control = midpoint.clone();
-
-    const signY = chord.y === 0 ? (relation.startsWith("world") ? 1 : -1) : Math.sign(chord.y);
+    const signY = chord.y === 0 ? -1 : Math.sign(chord.y);
     const bendY = Math.min(Math.abs(chord.y) * style.bendY + 22, 62);
 
-    if (relation === "character-character") {
-      control.x = Math.min(start.x, end.x) + style.bowX;
-      control.y += signY * bendY;
-    } else if (relation === "character-event") {
-      control.x += style.bowX;
-      control.y += signY * bendY;
-    } else if (relation === "event-event") {
-      control.y += signY * Math.min(Math.abs(chord.y) * style.bendY + 10, 24);
-    } else if (relation === "character-world") {
-      control.y += signY * Math.min(Math.abs(chord.y) * style.bendY + 16, 42);
-    } else if (relation === "event-world") {
-      control.x += style.bowX;
-      control.y += signY * Math.min(Math.abs(chord.y) * style.bendY + 14, 34);
-    } else {
-      control.x = Math.max(start.x, end.x) + style.bowX;
-      control.y += signY * bendY;
-    }
-
+    control.x = Math.min(start.x, end.x) + style.bowX;
+    control.y += signY * bendY;
     control.z = Math.max(start.z, end.z) + style.lift + chord.length() * 0.022;
 
     const curve = new THREE.QuadraticBezierCurve3(start.clone(), control, end.clone());
@@ -524,7 +440,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       const sourceMesh = nodeMap.get(edge.source);
       const targetMesh = nodeMap.get(edge.target);
 
-      const relationStyle = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["world-world"];
+      const relationStyle = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["character-character"];
       const { curve } = buildCurvePointsForRelation(edge.relation, sourceMesh.position, targetMesh.position);
       const glowGeometry = new THREE.TubeGeometry(curve, CURVE_SEGMENTS, EDGE_GLOW_RADIUS, EDGE_TUBE_RADIAL_SEGMENTS, false);
       const glowMaterial = new THREE.MeshBasicMaterial({
@@ -637,13 +553,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     if (level === "character-outer") {
       return 2;
     }
-    if (level === "event") {
-      return 1;
-    }
-    if (FACTION_IDS.has(nodeId)) {
-      return 2;
-    }
-    return 0;
+    return 1;
   }
 
   function getBaseNodeVisual(nodeId) {
@@ -659,22 +569,17 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
   }
 
 
-  function isFactionEdge(edge) {
-    return FACTION_IDS.has(edge.source) || FACTION_IDS.has(edge.target);
-  }
-
   function getBaseEdgeOpacity(edge) {
     const rootConnected = edge.source === graphState.rootId || edge.target === graphState.rootId;
     const edgeTier = rootConnected ? 2 : Math.max(getBaseTier(edge.source), getBaseTier(edge.target));
-    const style = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["world-world"];
-    const baseOpacity = edgeTier >= 4
+    const style = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["character-character"];
+    return edgeTier >= 4
       ? 0.94
       : edgeTier === 3
         ? Math.max(style.opacity[2] ?? 0.18, 0.4)
         : edgeTier === 2
           ? Math.max((style.opacity[1] ?? 0.12) * 0.52, 0.1)
           : style.opacity[0] ?? 0.06;
-    return isFactionEdge(edge) ? Math.max(baseOpacity, 0.22) : baseOpacity;
   }
 
   function getLevelIntroIndex(nodeId) {
@@ -688,10 +593,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     if (level === "character-outer") {
       return 2;
     }
-    if (level === "event") {
-      return 3;
-    }
-    return 4;
+    return 3;
   }
 
   function getNodeRevealProgress(nodeId, now = performance.now()) {
@@ -850,13 +752,13 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     });
 
     graph.edgeObjects.forEach((edge) => {
-      const style = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["world-world"];
+      const style = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["character-character"];
       const reveal = getEdgeRevealProgress(edge, now);
 
       if (!activeIds.size) {
         edge.mesh.material.opacity = getBaseEdgeOpacity(edge) * reveal;
         edge.mesh.material.color.setHex(style.color);
-        edge.glowMesh.material.opacity = (isFactionEdge(edge) ? 0.028 : 0) * reveal;
+        edge.glowMesh.material.opacity = 0;
         edge.glowMesh.material.color.setHex(style.activeColor);
         edge.label.visible = false;
         edge.label.element.style.setProperty("--edge-accent", style.cssColor);

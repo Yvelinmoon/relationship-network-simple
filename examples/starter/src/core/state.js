@@ -123,11 +123,8 @@ export function createGraphState(dataset, typeMeta) {
     });
 
     const sortForSubgraph = (items) => [...items].sort((left, right) => {
-      const zoneOrder = { character: 0, event: 1, world: 2 };
-      const zoneDelta = (zoneOrder[left.zone] ?? 3) - (zoneOrder[right.zone] ?? 3);
-      if (zoneDelta !== 0) {
-        return zoneDelta;
-      }
+      const importanceDelta = (right.importance ?? 0) - (left.importance ?? 0);
+      if (importanceDelta !== 0) return importanceDelta;
       const leftDegree = neighbors.get(left.id)?.size ?? 0;
       const rightDegree = neighbors.get(right.id)?.size ?? 0;
       if (leftDegree !== rightDegree) {
@@ -146,15 +143,7 @@ export function createGraphState(dataset, typeMeta) {
       const ringNodes = sortForSubgraph(byDepth.get(depth) ?? []);
       placeRing(ringNodes, radius, angle, spread, positions, depth * -16);
       ringNodes.forEach((node) => {
-        if (depth === 1 && node.zone === "character") {
-          nodeLevels.set(node.id, "character-core");
-        } else if (node.zone === "character") {
-          nodeLevels.set(node.id, "character-outer");
-        } else if (node.zone === "event") {
-          nodeLevels.set(node.id, "event");
-        } else {
-          nodeLevels.set(node.id, "world");
-        }
+        nodeLevels.set(node.id, depth === 1 ? "character-core" : "character-outer");
       });
     });
 
@@ -243,7 +232,7 @@ export function createGraphState(dataset, typeMeta) {
     getActiveViewId: () => activeViewId,
     setActiveView,
     getViews: () => views,
-    getFactions: () => dataset.factions ?? {},
+    getCharacterGroups: () => dataset.characterGroups ?? {},
     getNodes: () => activeGraph.nodes,
     getEdges: () => activeGraph.edges,
     getAllEdges: () => fullEdges,

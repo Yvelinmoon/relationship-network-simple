@@ -1,32 +1,19 @@
 const TYPE_LABELS = {
   character: "角色",
-  faction: "阵营/组织",
-  place: "地点",
-  object: "物件",
-  event: "事件",
 };
 
 const LEVEL_LABELS = {
-  root: "中心原点",
+  root: "中心角色",
   "character-core": "核心角色层",
   "character-outer": "扩展角色层",
-  event: "事件层",
-  world: "世界层",
 };
 
 const ZONE_LABELS = {
-  character: "人物关系",
-  event: "叙事事件",
-  world: "世界设定",
+  character: "角色关系",
 };
 
 const RELATION_LABELS = {
   "character-character": "角色关系",
-  "character-event": "角色-事件",
-  "event-event": "事件链路",
-  "character-world": "角色-世界",
-  "event-world": "事件-世界",
-  "world-world": "世界结构",
 };
 
 function buildEdgeIndex(edges) {
@@ -125,11 +112,7 @@ function createNodeDescriptor(graphState, edgeIndex, nodeId) {
     };
   });
 
-  const byZone = {
-    character: relations.filter((item) => item.relatedNode?.zone === "character"),
-    event: relations.filter((item) => item.relatedNode?.zone === "event"),
-    world: relations.filter((item) => item.relatedNode?.zone === "world"),
-  };
+  const characterRelations = relations.filter((item) => item.relatedNode?.type === "character");
 
   return {
     title: node.label,
@@ -137,10 +120,10 @@ function createNodeDescriptor(graphState, edgeIndex, nodeId) {
     description: node.description ?? "",
     typeLabel: TYPE_LABELS[node.type] ?? node.type,
     levelLabel: LEVEL_LABELS[graphState.getNodeLevel(nodeId)] ?? "未分层",
-    zoneLabel: ZONE_LABELS[graphState.getNodeZone(nodeId)] ?? "未知区",
-    relationSummary: `${relations.length} 条直接关系 / 角色 ${byZone.character.length} / 事件 ${byZone.event.length} / 世界 ${byZone.world.length}`,
-    relationItems: relations
-      .sort((left, right) => (right.relatedNode?.zone ?? "").localeCompare(left.relatedNode?.zone ?? ""))
+    zoneLabel: ZONE_LABELS[graphState.getNodeZone(nodeId)] ?? "角色关系",
+    relationSummary: `${characterRelations.length} 条角色关系`,
+    relationItems: characterRelations
+      .sort((left, right) => (right.relatedNode?.importance ?? 0) - (left.relatedNode?.importance ?? 0))
       .slice(0, 6)
       .map((item) => item.relationDetail),
   };

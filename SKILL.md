@@ -1,172 +1,164 @@
 ---
-name: narrative-relationship-graph-space-assets
-description: Use when the user wants to quickly build or update an interactive narrative / character relationship graph using pre-provided assets from the current Cohub Space or workspace files. This fast variant removes Wikimedia/Neta image acquisition and requires character portraits, faction icons, backgrounds, and other images to come from local Space files supplied by the user.
+name: relationship-network-simple
+description: Use when the user wants to quickly build or update a pure character-to-character relationship network using pre-provided character portrait assets from the current Cohub Space or workspace files. This simple variant only creates character nodes and character-to-character edges, and does not fetch or generate images externally.
 metadata:
-  short-description: Fast relationship graphs from Space-provided assets
+  short-description: Fast character relationship network from Space portraits
 ---
 
-# Narrative Relationship Graph — Space Assets Fast Variant
+# Relationship Network Simple
 
-This is a fast-build variant of `narrative-relationship-graph` for users who pre-provide visual assets in the current Cohub Space / workspace. It prioritizes generation speed and deterministic local files over external image search or generated media.
+This skill builds a **pure character relationship network** from local Space/workspace portraits.
+
+It is intentionally narrow:
+
+- character nodes only
+- character-to-character relationships only
+- user-provided local portraits only
+- no external image search
+- no generated images
+
+Use this skill when speed matters and the user has already provided the character materials.
 
 ## Use This Skill When
 
-Use this skill when the user asks to create, rebuild, or update a relationship-network frontend and explicitly wants to provide assets themselves, for example:
+Use this skill when the user asks for a fast character relationship page and has already provided character assets, for example:
 
 - “角色图都在 space 文件夹里，直接用这些做关系网”
 - “不要搜图，素材我都给好了”
 - “尽快做一个人物关系网，图片从当前 Space 文件里拿”
-- “用本地素材生成三国 / 动漫 / 游戏 / 小说角色关系图”
-- “制作角色关系网 / 人物关系图 / 事件关系网 / 世界观图，并复用用户上传图片”
+- “只做角色关系”
+- “用本地头像做角色关系图”
 
-Good targets:
+The output is an interactive browser page showing characters as nodes and relationships as edges.
 
-- 角色关系网、阵营关系图、事件关系图、地点/物件关系图
-- 二次元、动画、漫画、游戏、小说、历史、OC 世界、TRPG 世界
-- Any story where local portraits/backgrounds are already provided
+## Scope Rules
 
-Do **not** use this fast variant when the user expects the assistant to search Wikimedia, generate Neta images, fetch official art, or create new visual assets. Use the full `narrative-relationship-graph` skill for that.
+### Allowed
 
-## Core Principle
+- Character nodes
+- Character portraits from local Space/workspace files
+- Character-to-character edges
+- Relationship labels such as `朋友`, `亲人`, `师徒`, `敌对`, `竞争`, `保护`, `爱慕`, `同伴`, `利用`, `误解`
+- Directional perspectives inside relationship data when the two characters see the relationship differently
+- Overview plus smaller character-only subgraphs
+- Local/procedural visual theme
 
-Optimize for speed and predictable local rendering:
+### Not Allowed
 
-1. **Images must come from Space/workspace files.**
-2. **Do not call Wikimedia, Wikipedia, Neta, web search, or arbitrary remote image URLs for image acquisition.**
-3. **If a needed image is missing, continue with a non-image fallback and report the missing local asset.**
-4. **Compress every local portrait before wiring it into graph data.**
-5. **Keep the graph readable: relationship clarity beats decoration.**
+- Non-character nodes
+- Non-character edges
+- External image fetching
+- External image generation
+- Remote portrait hotlinking
 
-## Local Space Asset Rules
+If the user asks for a broader graph, ask whether to switch to a different skill before proceeding.
 
-The user will provide assets in the current Space / workspace. In Cohub, inspect local files through the filesystem first, normally under `/workspace` or the current working directory.
+## Default Size
 
-Recommended user-provided asset layout:
+If the user does not specify scale, build a compact first version:
+
+- 8-16 character nodes
+- 12-35 character relationships
+- 2-5 character-only views
+
+Use a larger graph only when the user explicitly asks or provides a large structured cast list.
+
+## Local Portrait Rules
+
+Character portraits must come from files already present in the current Space/workspace.
+
+Recommended layout:
 
 ```text
-/workspace/<project-or-assets>/
+/workspace/<assets>/
   portraits/
-    ichigo-kurosaki.png
-    rukia-kuchiki.jpg
-  backgrounds/
-    graph-background.webp
-  factions/
-    gotei-13.webp
-  objects/
-    hogyoku.png
-  data/
-    characters.csv|json|md  optional
+    character-id.png
+    character-id.jpg
+  characters/
+    another-character.webp
 ```
 
-Also support looser layouts because users may upload files without structure:
+Loose layouts are also acceptable:
 
 ```text
-/workspace/assets/*.png
 /workspace/uploads/*
-/workspace/<space-name>/**/*.{png,jpg,jpeg,webp,gif}
+/workspace/assets/*
+/workspace/**/*.{png,jpg,jpeg,webp,gif}
 ```
 
-### Asset Discovery Order
+Before building, scan local images. Avoid large unrelated folders such as `/public`, `.git`, `node_modules`, and build caches.
 
-Before editing the graph, scan the current workspace for local images:
-
-```bash
-find /workspace -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.gif' \)
-```
-
-Prefer specialized file tools when available. Do not scan `/public`, `.git`, `node_modules`, huge build outputs, or unrelated dependency folders unless the user specifically points there.
-
-For each project, create a machine-readable report:
+Create:
 
 ```text
-reports/local-asset-pass.json
+reports/local-portrait-pass.json
 ```
 
 The report should include:
 
-- `assetRootsScanned`
-- each important node id / label
-- candidate local files considered
+- scanned roots
+- each important character id / label
+- candidate local files
 - selected local file, if any
-- decision: `used`, `missing`, `ambiguous`, `rejected`
+- decision: `used`, `missing`, `ambiguous`, or `rejected`
 - reason
-- raw local path
+- raw local path copied into the project
 - compressed thumb/card output paths
 
-### Filename Matching
+## Portrait Matching
 
-Use stable node IDs and match assets by:
+Match portraits by:
 
-1. exact node id: `ichigo-kurosaki.webp`
-2. normalized label: `黑崎一护.png`, `ichigo_kurosaki.jpg`
-3. aliases provided by user or added in data: `aliases: ["一护", "Ichigo Kurosaki"]`
+1. exact character id: `character-id.webp`
+2. normalized label: `角色名.png`, `character_name.jpg`
+3. aliases in node data: `aliases: ["别名", "English Name"]`
 4. folder hints: `portraits/`, `characters/`, `头像/`, `角色/`
 
-Normalize by lowercasing Latin text and removing spaces, punctuation, hyphens, underscores, and common brackets. For Chinese/Japanese labels, prefer exact substring match.
+Normalize Latin filenames by lowercasing and removing spaces, punctuation, hyphens, underscores, and brackets. For Chinese/Japanese names, prefer exact substring matches.
 
-If multiple plausible images exist, choose the most specific path first:
-
-```text
-portraits/<id>.* > characters/<id>.* > any exact <id>.* > label/alias match > folder-level guess
-```
-
-If still ambiguous, do not guess silently. Pick no image, record `ambiguous`, and mention the candidates in the final summary.
+If multiple candidates remain, do not guess silently. Mark the character as `ambiguous` and mention candidates in the final summary.
 
 ## Non-Negotiable Gates
 
-Before final delivery, explicitly pass these gates or state the blocker.
+Before delivery, pass or explicitly report these gates:
 
-1. **Data gate**: every node has a stable ID, type, zone, 50-100 Chinese character `description`, and meaningful relation labels.
-2. **Local asset gate**: scan Space/workspace asset folders. Important characters must either use a selected local image or have a `missing/ambiguous/rejected` entry in `reports/local-asset-pass.json`. No Wikimedia/Neta/web image acquisition is allowed.
-3. **Portrait compression gate**: every used portrait must be compressed into `assets/portraits/thumb/` and preferably `assets/portraits/card/`. `node.image` must point to `thumb/`, not to the raw uploaded image.
-4. **Background gate**: use a user-provided local background when available. If missing, use CSS/Three.js procedural dark background or existing neutral starter background; do not generate or fetch one remotely.
-5. **Theme reset gate**: remove prior-world text, colors, decorative motifs, and hardcoded IDs unless continuing that exact world.
-6. **Verification gate**: check syntax, data import, local serving, asset URLs, view/subgraph layout coverage, and at least one visible route where local node images/background assets load.
+1. **Character data gate**: every node is `type: "character"` and `zone: "character"`, has a stable id, display label, 50-100 Chinese character description, and optional aliases.
+2. **Relationship gate**: every edge is `relation: "character-character"`, connects two existing character nodes, and has a meaningful label.
+3. **Local portrait gate**: important characters use local portraits or have a `missing/ambiguous/rejected` entry in `reports/local-portrait-pass.json`.
+4. **Portrait compression gate**: every used portrait is compressed into `assets/portraits/thumb/` and `assets/portraits/card/`; `node.image` must point to the thumb file.
+5. **Theme cleanup gate**: no previous story names or unrelated UI copy remain visible.
+6. **Verification gate**: syntax checks, import validation, layout coverage, initial camera focus, and local HTTP asset checks pass.
 
-Final updates should mention the local asset pass, portrait compression pass, background source, and verification status. If any image is missing, say which local assets were not found or were ambiguous.
+Final response must mention:
 
-## Forbidden In This Fast Variant
+- project path
+- preview/share URL if available
+- character count
+- relationship count
+- view count
+- local portrait pass summary
+- compression summary
+- missing/ambiguous portraits, if any
+- verification result
 
-Do not do any of the following unless the user explicitly switches to the full asset-acquisition workflow:
+## Default Build Order
 
-- Wikimedia Commons API search
-- Wikipedia PageImages fallback
-- Neta image generation
-- Neta character avatar search
-- Web search for images
-- Hotlinking remote CDN images
-- Downloading random fan art, official art, posters, screenshots, covers, cosplay, merchandise, or logo images
-- Asking the user to authenticate Neta just to build this graph
-
-If the user asks for missing images to be generated or searched, say this fast skill intentionally avoids external image acquisition and ask whether to switch to the full `narrative-relationship-graph` workflow.
-
-## Default Execution Order
-
-Use this order for new fast builds:
-
-1. Identify or create the project folder, usually `/workspace/<story>-relationship-graph`.
-2. Copy/adapt `template.html` and `examples/starter/` as the implementation skeleton.
-3. Scan local Space/workspace assets and write `reports/local-asset-pass.json`.
-4. Build the node/edge/view data with descriptions and meaningful relations.
-5. Match local portraits/backgrounds/icons to nodes.
-6. Compress every used portrait into `assets/portraits/thumb/` and `assets/portraits/card/`.
-7. Wire compressed local assets into data: `node.image = "./assets/portraits/thumb/<id>.webp"` and `node.imageCard = "./assets/portraits/card/<id>.webp"`.
-8. Reset the visual theme using CSS/Three.js tokens and local background if available.
-9. Update cache-busting versions in `index.html`, `app.js`, `src/main.js`, and `BUILD_ID`.
-10. Run syntax, import-level data, layout, camera-focus, and local HTTP asset checks.
-11. Share/publish only after verifying local assets return 200.
+1. Create or copy the project folder, usually `/workspace/<story>-character-network`.
+2. Copy/adapt `template.html` and `examples/starter/`.
+3. Define character nodes and character-to-character edges.
+4. Create character-only views.
+5. Scan local portraits and write `reports/local-portrait-pass.json`.
+6. Copy selected raw portraits into `assets/portraits/`.
+7. Compress portraits.
+8. Wire `image`, `imageCard`, `imageSource`, and `imageCredit` into character nodes.
+9. Apply a simple visual theme.
+10. Update cache-busting versions.
+11. Run verification.
+12. Publish/share if requested.
 
 ## Base Template
 
-Use the standalone HTML shell bundled with this skill as the entry template:
-
-```text
-template.html
-```
-
-Use `examples/starter/` as the default project skeleton for new worlds. Replace only dataset, title, copy, colors, local assets, and theme CSS needed for the new world.
-
-Do not copy story-specific content from `examples/reference/` into unrelated worlds.
+Use the bundled `template.html` as the HTML shell and `examples/starter/` as the implementation skeleton.
 
 Default preview URL:
 
@@ -174,7 +166,7 @@ Default preview URL:
 http://127.0.0.1:8824/
 ```
 
-If the server is not running, start it from the project root:
+Start a local server from the project root when needed:
 
 ```bash
 python3 -m http.server 8824
@@ -189,11 +181,7 @@ When changing JS or CSS, update cache-busting versions in:
 
 ## Data Model
 
-Represent a narrative world with nodes, edges, and views.
-
-### Nodes
-
-Use stable lowercase IDs. Prefer short semantic IDs over display labels.
+### Character Node
 
 ```js
 {
@@ -201,232 +189,146 @@ Use stable lowercase IDs. Prefer short semantic IDs over display labels.
   label: "中心角色",
   type: "character",
   zone: "character",
-  faction: "main-camp",
   importance: 100,
   aliases: ["别名", "English Name"],
-  description: "关系网的叙事中心，连接主要人物、关键事件和核心阵营。简介说明该角色为什么是理解全图的入口。",
+  description: "关系网的中心人物，连接主要亲友、竞争者和敌对者。简介应说明其性格位置、关系压力与浏览入口作用。",
   image: "./assets/portraits/thumb/core-character.webp",
   imageCard: "./assets/portraits/card/core-character.webp",
   imageSource: "local:/workspace/uploads/core-character.png",
-  imageCredit: "User-provided Space asset"
+  imageCredit: "User-provided Space portrait"
 }
 ```
 
-Every node should include a 50-100 Chinese character `description` explaining why the node matters in the graph: role, faction/camp, event function, symbolic meaning, or key conflict.
+Every node must be a character node.
 
-Recommended node types:
-
-- `character`: people or intelligent roles
-- `event`: plot events, battles, turning points, incidents
-- `faction`: organizations, families, political groups, schools, houses, camps
-- `place`: geography, cities, buildings, regions
-- `object`: artifacts, weapons, documents, clues, heirlooms
-
-Recommended zones:
-
-- `character`: characters
-- `event`: events or timeline nodes
-- `world`: factions, places, objects, institutions, geography
-
-### Edges
-
-Use relation labels as readable verbs or short phrases. Do not use vague labels like “related”.
+### Character Relationship Edge
 
 ```js
-{ source: "core-character", target: "core-faction", label: "归属", relation: "character-world" }
+{
+  source: "core-character",
+  target: "friend-character",
+  label: "挚友/互相保护",
+  relation: "character-character"
+}
 ```
 
-Supported relation classes:
-
-- `character-character`: friendship, rivalry, kinship, mentorship, romance, protection
-- `character-event`: participation, victim, witness, planner, betrayer, killer, defender
-- `event-event`: timeline, escalation, cause/effect, foreshadowing, consequence
-- `character-world`: faction, family, school, office, object ownership, place association
-- `event-world`: event location, participating organization, contested object
-- `world-world`: institution hierarchy, family alliance, geography containment, artifact category
+Use direct readable labels. Avoid vague labels like `相关` or `认识` unless that is truly the only known relation.
 
 ### Directional Perspectives
 
-When A's view of B differs from B's view of A, keep one visual edge but add `perspectives`:
+Use `perspectives` when each side understands the relationship differently:
 
 ```js
 {
   source: "character-a",
   target: "character-b",
-  label: "非对称关系",
+  label: "非对称情感",
   relation: "character-character",
   perspectives: [
-    { from: "character-a", to: "character-b", label: "信任/保护" },
-    { from: "character-b", to: "character-a", label: "怀疑/利用" }
+    { from: "character-a", to: "character-b", label: "爱慕并主动靠近" },
+    { from: "character-b", to: "character-a", label: "信任但未回应恋情" }
   ]
 }
 ```
 
-Show perspectives in clicked-node cards, not as always-on visual clutter.
+Keep one visual edge; show directional detail in the clicked character card.
 
-## Relationship Writing Rules
+## Writing Relationships
 
-Follow this sequence:
+Build from the center outward:
 
-1. Start with the root character/faction/event.
-2. Add core characters directly related to the root.
-3. Add faction/family/school affiliations early.
-4. Add major events only after the character/faction skeleton is clear.
-5. Add places and objects as supporting context.
-6. Add event-event timeline edges last.
+1. Pick the central character.
+2. Add closest allies and family-like ties.
+3. Add rivals and enemies.
+4. Add mentors, protectors, dependents, admirers, and manipulators.
+5. Add secondary characters only if their relationship clarifies the central network.
 
 For each edge, ask:
 
-- Can the user understand the relation from the label alone?
-- Is the relation important enough to show visually?
-- Does it explain faction, conflict, timeline, or causality?
+- Does the label explain the relationship by itself?
+- Is this relationship important enough to show visually?
+- Does it help users understand loyalty, conflict, affection, dependence, rivalry, or betrayal?
 
-Use faction edges heavily:
+## Views
 
-```js
-{ source: "character", target: "faction", label: "归属", relation: "character-world" }
-{ source: "event", target: "faction", label: "参战", relation: "event-world" }
-```
-
-## Views And Subgraphs
-
-Always prefer a default overview plus independent subgraphs over one giant graph.
-
-Recommended top-level sections:
+Use character-only views. Recommended structure:
 
 ```text
-总览 / 人物 / 阵营 / 事件 / 世界
+总览 / 核心人物 / 亲密关系 / 冲突关系
 ```
 
-A subgraph should have:
+Examples:
 
-- `id`: stable view ID
-- `label`: UI label
-- `rootId`: subgraph center
-- `include`: explicit node IDs or `all`
+```js
+export const GRAPH_VIEWS = [
+  {
+    id: "overview",
+    label: "总览",
+    children: [
+      { id: "overview-all", label: "全部角色", rootId: "core-character", include: "all" }
+    ]
+  },
+  {
+    id: "characters",
+    label: "人物",
+    children: [
+      { id: "core-circle", label: "核心圈", rootId: "core-character", include: ["core-character", "friend", "rival"] },
+      { id: "conflicts", label: "冲突线", rootId: "core-character", include: ["core-character", "rival", "enemy"] }
+    ]
+  }
+];
+```
 
-Each subgraph should answer a clear question:
+Subgraphs must contain only character nodes and character-character edges.
 
-- Who belongs to this camp?
-- What happened in this event?
-- How does this family connect?
-- Which objects drive the plot?
+## Visual Rules
 
-## Visual Encoding Rules
+- Node size encodes character importance.
+- Node color may encode relationship grouping if useful, but do not create grouping nodes.
+- Node position should keep the central character readable.
+- Edge labels are hidden by default and appear only on hover/focus/selection for directly highlighted relationships unless the user asks otherwise.
+- Clicked character cards should show the portrait, description, relation count, and up to 5-8 representative relationships.
+- Keep unrelated nodes faded during focus.
 
-Use visual channels consistently:
-
-- Node color: primary faction / force / camp
-- Node size: importance and layer
-- Node position: narrative structure and subgraph layout
-- Edge color: relationship class, low-saturation by default
-- Edge labels: hidden by default; show only on hover/focus/selection for direct highlighted relationships unless user requests otherwise
-- Highlighting: related nodes/edges stay readable; unrelated graph fades hard
-
-Avoid:
-
-- Dumping every node into one unreadable graph
-- Showing all edge labels by default
-- Random rainbow colors
-- Decorative UI that competes with the graph
-- Info cards that exceed viewport without scroll protection
-
-## Theme Rules For Fast Builds
-
-Because no remote generation is allowed, build the theme from:
-
-1. user-provided background if available;
-2. CSS gradients / procedural atmosphere;
-3. faction colors from data;
-4. small non-interfering decorative elements.
-
-Theme brief should include:
-
-- Narrative mood
-- Palette: 3-5 colors tied to the world/factions
-- Typography direction
-- Background atmosphere
-- Node material metaphor
-- Decorative elements
-
-Update at least:
-
-- HTML title and `aria-label`
-- Dataset key/imports/root ID/view labels
-- Node/faction color palette
-- Background and decorative CSS
-- Card tone, image treatment, label style
-- Any hardcoded prior-world text or IDs
+Avoid dense unreadable hairballs. If there are too many characters, create smaller character-only subgraphs.
 
 ## Portrait Compression Workflow
 
-Do not point graph nodes at raw uploaded images. Compress used portraits into two tiers:
+Do not wire raw uploaded images directly.
 
-- `assets/portraits/thumb/<node-id>.webp`: 256×256, WebP quality around 75, used by `node.image`
-- `assets/portraits/card/<node-id>.webp`: 512×512, WebP quality around 80, used by `node.imageCard`
-
-Use the bundled helper from the graph project root:
+From the project root:
 
 ```bash
 python3 /workspace/skills/narrative-relationship-graph-space-assets/tools/compress_portraits.py assets/portraits
 ```
 
-If running from the original full-skill path, adjust the helper path accordingly. The compression crop should be top-center square to preserve heads.
+Output contract:
 
-After compression, update data like this:
+- `assets/portraits/thumb/<character-id>.webp`: 256×256, used by graph nodes
+- `assets/portraits/card/<character-id>.webp`: 512×512, used by clicked cards
+
+Data wiring:
 
 ```js
-{
-  id: "core-character",
-  image: "./assets/portraits/thumb/core-character.webp",
-  imageCard: "./assets/portraits/card/core-character.webp",
-  imageSource: "local:/workspace/uploads/core-character.png",
-  imageCredit: "User-provided Space asset"
-}
-```
-
-Verification must include checking representative `thumb/` and `card/` files return 200 locally.
-
-## Local Asset Matching Helper Pattern
-
-For fast builds, you may create a small script under `tools/` or run inline Python to generate `reports/local-asset-pass.json` and copy selected raw portraits into `assets/portraits/` before compression.
-
-Recommended matching output shape:
-
-```json
-{
-  "assetRootsScanned": ["/workspace/uploads", "/workspace/assets"],
-  "summary": { "used": 12, "missing": 3, "ambiguous": 1, "rejected": 0 },
-  "items": [
-    {
-      "nodeId": "core-character",
-      "label": "中心角色",
-      "aliases": ["别名"],
-      "candidates": ["/workspace/uploads/core-character.png"],
-      "selected": "/workspace/uploads/core-character.png",
-      "decision": "used",
-      "reason": "exact node id match in portraits folder",
-      "rawLocalPath": "assets/portraits/core-character.png",
-      "thumbPath": "assets/portraits/thumb/core-character.webp",
-      "cardPath": "assets/portraits/card/core-character.webp"
-    }
-  ]
-}
+image: "./assets/portraits/thumb/<character-id>.webp",
+imageCard: "./assets/portraits/card/<character-id>.webp",
+imageSource: "local:/workspace/uploads/<original-file>",
+imageCredit: "User-provided Space portrait"
 ```
 
 ## Verification
 
-After edits, run syntax checks:
+Run syntax checks:
 
 ```bash
+node --check app.js
 node --check src/main.js
 node --check src/core/graph.js
 node --check src/core/state.js
 node --check src/data/<story>.js
-node --check app.js
 ```
 
-Run an import-level data validation pass:
+Run import-level validation:
 
 ```bash
 node --input-type=module <<'JS'
@@ -434,9 +336,13 @@ import { DATASET, GRAPH_VIEWS, TYPE_META } from './src/data/<story>.js';
 import { createGraphState } from './src/core/state.js';
 
 const ids = new Set(DATASET.nodes.map((node) => node.id));
+const nonCharacters = DATASET.nodes.filter((node) => node.type !== 'character' || node.zone !== 'character');
 const badEdges = DATASET.edges.filter((edge) => !ids.has(edge.source) || !ids.has(edge.target));
+const nonCharacterEdges = DATASET.edges.filter((edge) => edge.relation !== 'character-character');
 const emptyDescriptions = DATASET.nodes.filter((node) => !node.description);
+if (nonCharacters.length) throw new Error(`Non-character nodes: ${nonCharacters.map((n) => n.id).join(', ')}`);
 if (badEdges.length) throw new Error(`Bad edge endpoints: ${JSON.stringify(badEdges.slice(0, 5))}`);
+if (nonCharacterEdges.length) throw new Error(`Non-character relationships: ${JSON.stringify(nonCharacterEdges.slice(0, 5))}`);
 if (emptyDescriptions.length) throw new Error(`Missing descriptions: ${emptyDescriptions.map((n) => n.id).join(', ')}`);
 
 const state = createGraphState({ ...DATASET, views: GRAPH_VIEWS }, TYPE_META);
@@ -447,7 +353,8 @@ for (const section of GRAPH_VIEWS) {
     const edges = state.getEdges();
     const missingPositions = nodes.filter((node) => !state.getNodePosition(node.id));
     if (!nodes.length) throw new Error(`Empty view: ${view.id}`);
-    if (!edges.length) throw new Error(`Empty edges in view: ${view.id}`);
+    if (nodes.some((node) => node.type !== 'character')) throw new Error(`Unexpected node in view: ${view.id}`);
+    if (edges.some((edge) => edge.relation !== 'character-character')) throw new Error(`Unexpected edge in view: ${view.id}`);
     if (missingPositions.length) throw new Error(`${view.id} missing positions: ${missingPositions.map((n) => n.id).join(', ')}`);
   }
 }
@@ -460,46 +367,43 @@ Check local serving:
 ```bash
 python3 -m http.server 8824
 curl -I 'http://127.0.0.1:8824/?v=<cache-version>'
-curl -I 'http://127.0.0.1:8824/assets/portraits/thumb/<node-id>.webp'
+curl -I 'http://127.0.0.1:8824/assets/portraits/thumb/<character-id>.webp'
 ```
 
-Asset verification checklist:
+Verification checklist:
 
-- Local asset pass completed and stored in `reports/local-asset-pass.json`.
-- Important character portraits are selected from local Space/workspace files or recorded as missing/ambiguous.
-- No Wikimedia/Neta/web image acquisition was used.
-- Every used portrait is compressed and `node.image` points to `assets/portraits/thumb/`.
-- `imageSource` uses `local:<original path>` or an equivalent local provenance string.
-- Background is local or procedural; no generated/remote background.
-- Syntax checks pass.
-- Import-level validator passes.
-- Layout coverage passes: every node has a position and no non-root node stacks at `(0,0)`/root.
-- Initial camera is an overview distance and `controls.target` is immediately focused on the active view root after first graph build and after view switches.
-- Local HTTP returns 200 for page, background if used, and representative portraits.
+- All nodes are characters.
+- All relationships are character-character.
+- Local portrait pass exists.
+- Used portraits are compressed and wired to `thumb/` paths.
+- Missing portraits are reported, not fetched.
+- No external image acquisition was used.
+- Initial camera starts at overview distance and immediately focuses on the active root character.
+- Local HTTP returns 200 for the page and representative portraits.
 - Cache-busting versions changed.
 
 ## Common Failure Modes
 
-- **Missing user images**: do not search externally. Record missing local asset and keep node visible without image.
-- **Ambiguous filenames**: do not guess silently. Record candidates and ask user for clearer naming if needed.
-- **Raw images wired directly**: wrong. Copy to `assets/portraits/`, compress, and point data to `thumb/`.
-- **Large uploaded images slow the graph**: compression is mandatory.
-- **Old theme remains**: search for prior story names and replace visible text/decor.
-- **Many nodes stack on root**: run layout coverage validation and fix zones/layout.
-- **Initial page feels too zoomed in or not centered**: use an overview camera position similar to `(-1100, 1500, 1100)`, keep `minDistance` around `620`, and immediately copy the active root world position into `controls.target` after `buildGraph()`.
-- **All edge labels visible**: restore hover/focus behavior unless user requested always-on labels.
-- **Info card shows QA logs**: keep provenance and QA in report files, not normal user-facing cards.
-- **Background not visible**: if using local background, load it through Three.js `scene.background` or ensure CSS background is not hidden by WebGL canvas.
+- **The graph includes non-character nodes**: remove them or switch to another workflow.
+- **The page tries to search or generate images**: stop; this skill only uses user-provided local portraits.
+- **Raw portraits are wired directly**: compress first and wire `thumb/`/`card/` assets.
+- **Portrait names are ambiguous**: record candidates and ask for clearer filenames.
+- **Initial page feels too close or off-center**: use the starter overview camera and immediately focus the active root after graph build.
+- **All relationship labels are visible**: restore hover/focus behavior unless the user requests always-on labels.
+- **Character card is too long**: show only the most useful 5-8 direct relationships.
 
 ## Final Response Format
 
-When delivering a fast graph, keep the final update concise and include:
+Keep final updates concise:
 
-- Project path
-- Preview/share URL if available
-- Node/edge/view counts
-- Local asset pass summary: used / missing / ambiguous
-- Portrait compression summary
-- Background source: local file or procedural
-- Verification summary
-- Any missing/ambiguous asset names the user may want to add later
+```text
+已完成角色关系网：
+- 项目：<path>
+- 预览：<url>
+- 角色：N
+- 关系：M
+- 视图：K
+- 本地头像：used / missing / ambiguous
+- 压缩：thumb/card completed
+- 验证：passed
+```

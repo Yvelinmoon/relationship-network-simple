@@ -1,15 +1,14 @@
-# Narrative Relationship Graph — Space Assets Fast Variant
+# Relationship Network Simple
 
-Fast Cohub skill for building interactive narrative / character relationship graphs from user-provided local Space assets.
+Fast Cohub skill for building **pure character-to-character relationship networks** from user-provided local Space portraits.
 
-This variant intentionally removes external image acquisition:
+This simple variant only supports:
 
-- no Wikimedia image pass
-- no Wikipedia image fallback
-- no Neta image generation
-- no Neta character avatar search
-- no web image search
+- character nodes
+- character-to-character edges
+- local user-provided portraits
+- compressed `thumb/` and `card/` portrait assets
 
-Character portraits, backgrounds, icons, and object images should come from files already present in the current Space / workspace. Missing assets are reported instead of fetched.
+It intentionally does not fetch, search, or generate images.
 
 Main skill file: `SKILL.md`

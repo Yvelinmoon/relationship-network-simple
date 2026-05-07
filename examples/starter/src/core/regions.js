@@ -64,7 +64,7 @@ export function createRegionController({ THREE, zoneGroup }) {
       );
     }
 
-    ["character", "event", "world"].forEach((zoneKey) => {
+    ["character"].forEach((zoneKey) => {
       const zone = zoneLayout.zones[zoneKey];
       if (!zone) {
         return;
