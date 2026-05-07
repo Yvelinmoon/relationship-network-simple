@@ -1,12 +1,13 @@
 # Relationship Network Simple
 
-Fast Cohub skill for building **pure character-to-character relationship networks** from user-provided local Space portraits.
+A small Cohub skill for quickly building pure character-to-character relationship networks from local Space portraits.
 
-This simple variant supports:
+It keeps the workflow minimal:
 
-- character nodes
-- character-to-character edges
-- local user-provided portraits
-- direct local image wiring
+- character nodes only
+- character-to-character edges only
+- copy local portraits into the project
+- wire portraits directly with `node.image`
+- keep checks minimal
 
 Main skill file: `SKILL.md`
