@@ -201,24 +201,34 @@ try {
     graphState,
   });
 
-  function buildCurrentGraph() {
+  function focusActiveRoot({ immediate = false } = {}) {
+    const focus = graphController.getNodeWorldPosition(graphState.rootId);
+    if (!focus) return;
+    if (immediate) {
+      sceneController.controls.target.copy(focus);
+      sceneController.controls.update();
+      return;
+    }
+    sceneController.controls.target.copy(focus);
+  }
+
+  function buildCurrentGraph({ focusRoot = false } = {}) {
     graphController.buildGraph(`${DATASET_KEY}:${graphState.getActiveViewId()}`);
+    if (focusRoot) focusActiveRoot({ immediate: true });
   }
 
   function selectView(viewId) {
     graphState.setActiveView(viewId);
     graphController.setHoveredNode(null);
     graphController.setSelectedNode(null);
-    buildCurrentGraph();
-    const focus = graphController.getNodeWorldPosition(graphState.rootId);
-    if (focus) sceneController.controls.target.copy(focus);
+    buildCurrentGraph({ focusRoot: true });
     interactionController.markActivity();
   }
 
   window.addEventListener("resize", () => sceneController.resize());
   interactionController.bind();
   mountViewIndex(GRAPH_VIEWS, selectView);
-  buildCurrentGraph();
+  buildCurrentGraph({ focusRoot: true });
 
   const clock = new sceneController.THREE.Clock();
   function animate() {

@@ -29,16 +29,16 @@ export function createScene(root) {
     backgroundTexture.colorSpace = THREE.SRGBColorSpace;
   }
   scene.background = backgroundTexture;
-  scene.fog = new THREE.Fog(0x090a0d, 1200, 3400);
+  scene.fog = new THREE.Fog(0x090a0d, 1600, 4600);
 
-  const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 5200);
-  camera.position.set(-540, 780, 540);
+  const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 1, 6200);
+  camera.position.set(-1100, 1500, 1100);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.minDistance = 360;
-  controls.maxDistance = 3000;
+  controls.minDistance = 620;
+  controls.maxDistance = 4600;
   controls.enablePan = true;
   controls.screenSpacePanning = true;
   controls.mouseButtons = {

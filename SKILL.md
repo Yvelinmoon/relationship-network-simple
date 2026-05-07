@@ -153,7 +153,7 @@ Use this order for new fast builds:
 7. Wire compressed local assets into data: `node.image = "./assets/portraits/thumb/<id>.webp"` and `node.imageCard = "./assets/portraits/card/<id>.webp"`.
 8. Reset the visual theme using CSS/Three.js tokens and local background if available.
 9. Update cache-busting versions in `index.html`, `app.js`, `src/main.js`, and `BUILD_ID`.
-10. Run syntax, import-level data, layout, and local HTTP asset checks.
+10. Run syntax, import-level data, layout, camera-focus, and local HTTP asset checks.
 11. Share/publish only after verifying local assets return 200.
 
 ## Base Template
@@ -474,6 +474,7 @@ Asset verification checklist:
 - Syntax checks pass.
 - Import-level validator passes.
 - Layout coverage passes: every node has a position and no non-root node stacks at `(0,0)`/root.
+- Initial camera is an overview distance and `controls.target` is immediately focused on the active view root after first graph build and after view switches.
 - Local HTTP returns 200 for page, background if used, and representative portraits.
 - Cache-busting versions changed.
 
@@ -485,6 +486,7 @@ Asset verification checklist:
 - **Large uploaded images slow the graph**: compression is mandatory.
 - **Old theme remains**: search for prior story names and replace visible text/decor.
 - **Many nodes stack on root**: run layout coverage validation and fix zones/layout.
+- **Initial page feels too zoomed in or not centered**: use an overview camera position similar to `(-1100, 1500, 1100)`, keep `minDistance` around `620`, and immediately copy the active root world position into `controls.target` after `buildGraph()`.
 - **All edge labels visible**: restore hover/focus behavior unless user requested always-on labels.
 - **Info card shows QA logs**: keep provenance and QA in report files, not normal user-facing cards.
 - **Background not visible**: if using local background, load it through Three.js `scene.background` or ensure CSS background is not hidden by WebGL canvas.
