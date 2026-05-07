@@ -1,6 +1,6 @@
 ---
 name: relationship-network-simple
-description: Quickly build a pure character-to-character relationship network from character portraits already provided in the current Space/workspace. Use local portraits directly; keep the workflow minimal.
+description: Quickly build a pure character-to-character relationship network from character portraits already provided in the current Space/workspace or as user-provided image URLs. Use provided portraits directly; keep the workflow minimal.
 metadata:
   short-description: Simple character relationship network
 ---
@@ -9,7 +9,7 @@ metadata:
 
 Build a simple interactive **character relationship network** as fast as possible.
 
-Use this when the user already provided character portraits in the Space/workspace and wants a browser page showing character nodes and character-to-character links.
+Use this when the user already provided character portraits in the Space/workspace, or provided direct OSS/CDN image URLs, and wants a browser page showing character nodes and character-to-character links.
 
 ## Scope
 
@@ -17,7 +17,7 @@ Keep it simple:
 
 - only character nodes
 - only character-to-character edges
-- use local portrait files directly
+- use provided portrait files or OSS/CDN image URLs directly
 - do not add extra asset workflows
 If a portrait is missing, leave that character without an image and mention it briefly at the end.
 
@@ -33,8 +33,8 @@ If the user does not specify scale, make a compact graph:
 
 1. Copy `examples/base/` into a new project folder.
 2. Replace `src/data/story.js` with the character data.
-3. Copy matched local portraits into `assets/portraits/`.
-4. Set `node.image` directly to `./assets/portraits/<file>`.
+3. Copy matched local portraits into `assets/portraits/`, or use user-provided OSS/CDN image URLs directly.
+4. Set `node.image` to `./assets/portraits/<file>` or the provided image URL.
 5. Update page title, aria label, and cache version.
 6. Run a quick syntax check and open/serve the page.
 7. Share/publish if requested.
@@ -46,6 +46,7 @@ Use simple matching:
 - exact id filename first, e.g. `luffy.png`
 - then character label, e.g. `路飞.png`
 - then obvious aliases if present
+- if the user provides an OSS/CDN URL for a character, use it directly as `node.image`
 
 If multiple files match, choose the clearest filename or ask the user.
 
@@ -61,7 +62,7 @@ Character node:
   zone: "character",
   importance: 100,
   description: "关系网的中心人物，连接主要亲友、竞争者和敌对者。简介说明其在人物关系中的核心作用。",
-  image: "./assets/portraits/core-character.png"
+  image: "./assets/portraits/core-character.png" // or "https://.../core-character.png"
 }
 ```
 
