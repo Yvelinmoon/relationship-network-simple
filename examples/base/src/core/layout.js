@@ -1,6 +1,6 @@
 // Character-only data-driven layout — no hardcoded story IDs.
 
-import * as THREE from "../../vendor/three/three.module.js?v=starter";
+import * as THREE from "../../vendor/three/three.module.js?v=character-network-simple";
 
 const CHARACTER_RINGS = {
   root: { radius: 68, color: 0xc0a060, accent: 0xe0d0a0, z: -168 },

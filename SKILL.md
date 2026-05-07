@@ -1,6 +1,6 @@
 ---
 name: relationship-network-simple
-description: Use when the user wants to quickly build or update a pure character-to-character relationship network using pre-provided character portrait assets from the current Cohub Space or workspace files. This simple variant only creates character nodes and character-to-character edges, uses local portraits directly, and does not fetch, generate, or compress images.
+description: Use when the user wants to quickly build or update a pure character-to-character relationship network using pre-provided character portrait assets from the current Cohub Space or workspace files. This simple variant only creates character nodes and character-to-character edges, and uses local portraits directly.
 metadata:
   short-description: Fast character relationship network from Space portraits
 ---
@@ -14,9 +14,7 @@ It is intentionally narrow and fast:
 - character nodes only
 - character-to-character relationships only
 - user-provided local portraits only
-- no external image search
-- no generated images
-- no image compression step
+- direct local image wiring
 
 Use this skill when speed matters and the user has already provided the character materials.
 
@@ -48,10 +46,9 @@ The output is an interactive browser page showing characters as nodes and relati
 
 - Non-character nodes
 - Non-character edges
-- External image fetching
-- External image generation
+- Non-local portrait sources
 - Remote portrait hotlinking
-- Image compression / resizing workflow
+- Image processing workflow
 
 If the user asks for a broader graph, ask whether to switch to a different skill before proceeding.
 
@@ -144,11 +141,11 @@ Final response must mention:
 ## Default Build Order
 
 1. Create or copy the project folder, usually `/workspace/<story>-character-network`.
-2. Copy/adapt `template.html` and `examples/starter/`.
+2. Copy/adapt `template.html` and `examples/base/`.
 3. Define character nodes and character-to-character edges.
 4. Create character-only views.
 5. Scan local portraits and write `reports/local-portrait-pass.json`.
-6. Copy selected portrait files into `assets/portraits/` without resizing or compression.
+6. Copy selected portrait files into `assets/portraits/`.
 7. Wire `image`, `imageSource`, and `imageCredit` into character nodes.
 8. Apply a simple visual theme.
 9. Update cache-busting versions.
@@ -157,7 +154,7 @@ Final response must mention:
 
 ## Base Template
 
-Use the bundled `template.html` as the HTML shell and `examples/starter/` as the implementation skeleton.
+Use the bundled `template.html` as the HTML shell and `examples/base/` as the implementation skeleton.
 
 Default preview URL:
 
@@ -370,7 +367,7 @@ Verification checklist:
 - Used portraits are copied locally and wired directly through `node.image`.
 - Missing portraits are reported, not fetched.
 - No external image acquisition was used.
-- No compression/resizing step was used.
+- Local portraits are used directly.
 - Initial camera starts at overview distance and immediately focuses on the active root character.
 - Local HTTP returns 200 for the page and representative portraits.
 - Cache-busting versions changed.
@@ -379,9 +376,8 @@ Verification checklist:
 
 - **The graph includes non-character nodes**: remove them or switch to another workflow.
 - **The page tries to search or generate images**: stop; this skill only uses user-provided local portraits.
-- **The workflow starts resizing portraits**: stop; this simple version wires copied local portraits directly.
 - **Portrait names are ambiguous**: record candidates and ask for clearer filenames.
-- **Initial page feels too close or off-center**: use the starter overview camera and immediately focus the active root after graph build.
+- **Initial page feels too close or off-center**: use the base overview camera and immediately focus the active root after graph build.
 - **All relationship labels are visible**: restore hover/focus behavior unless the user requests always-on labels.
 - **Character card is too long**: show only the most useful 5-8 direct relationships.
 

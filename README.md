@@ -2,13 +2,11 @@
 
 Fast Cohub skill for building **pure character-to-character relationship networks** from user-provided local Space portraits.
 
-This simple variant only supports:
+This simple variant supports:
 
 - character nodes
 - character-to-character edges
 - local user-provided portraits
-- direct local image wiring, no resizing/compression
-
-It intentionally does not fetch, search, generate, or compress images.
+- direct local image wiring
 
 Main skill file: `SKILL.md`

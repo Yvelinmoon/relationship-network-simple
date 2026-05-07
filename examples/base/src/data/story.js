@@ -1,4 +1,4 @@
-// Simple character-only starter dataset. Replace this file for each cast.
+// Base character-only dataset. Replace this file for each cast.
 
 export const TYPE_META = {
   character: { label: "角色", icon: "👤", size: 42, depth: -8 },

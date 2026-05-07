@@ -1,14 +1,13 @@
-// Generic starter entry for narrative relationship graphs.
-// Replace STORY_DATA_FILE, BUILD_ID, DATASET_KEY, and labels when creating a project.
-import { DATASET, GRAPH_VIEWS, TYPE_META } from "./data/story.js?v=starter";
-import { createScene } from "./core/scene.js?v=starter";
-import { createGraphController } from "./core/graph.js?v=starter";
-import { createInteractionController } from "./core/interaction.js?v=starter";
-import { createInfoCardController } from "./core/info-card.js?v=starter";
-import { createGraphState } from "./core/state.js?v=starter";
+// Entry for simple character relationship networks.
+import { DATASET, GRAPH_VIEWS, TYPE_META } from "./data/story.js?v=character-network-simple";
+import { createScene } from "./core/scene.js?v=character-network-simple";
+import { createGraphController } from "./core/graph.js?v=character-network-simple";
+import { createInteractionController } from "./core/interaction.js?v=character-network-simple";
+import { createInfoCardController } from "./core/info-card.js?v=character-network-simple";
+import { createGraphState } from "./core/state.js?v=character-network-simple";
 
 const root = document.getElementById("graph-root");
-const BUILD_ID = "build-starter";
+const BUILD_ID = "character-network-simple";
 const DATASET_KEY = DATASET.key ?? DATASET.rootId ?? "story";
 const INDEX_ARIA_LABEL = DATASET.ui?.indexAriaLabel ?? "关系图索引";
 

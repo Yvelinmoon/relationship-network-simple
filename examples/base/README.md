@@ -1,15 +1,15 @@
-# Relationship Network Simple Starter
+# Relationship Network Simple Base
 
-Neutral starter project for pure character-to-character relationship networks.
+Base project for pure character-to-character relationship networks.
 
 Use this folder when creating a new character network from local Space portraits.
 
 ## Create a new character network
 
 ```bash
-cp -r /workspace/skills/narrative-relationship-graph-space-assets/examples/starter /workspace/<new-character-network>
+cp -r /workspace/skills/relationship-network-simple/examples/base /workspace/<new-character-network>
 cd /workspace/<new-character-network>
-cp /workspace/skills/narrative-relationship-graph-space-assets/template.html index.html
+cp /workspace/skills/relationship-network-simple/template.html index.html
 ```
 
 Then:
@@ -31,4 +31,3 @@ image: "./assets/portraits/<character-id>.<ext>"
 - Layout is character-only and data-driven from `importance`, graph degree, and view root.
 - Optional character colors come from `DATASET.characterGroups` and `node.group`.
 - `node.image` should point to a local file copied into the project.
-- No portrait resizing or compression step is used in this simple starter.
