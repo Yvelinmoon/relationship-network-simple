@@ -116,7 +116,7 @@ function createNodeDescriptor(graphState, edgeIndex, nodeId) {
 
   return {
     title: node.label,
-    imageUrl: node.imageCard ?? node.image ?? null,
+    imageUrl: node.image ?? null,
     description: node.description ?? "",
     typeLabel: TYPE_LABELS[node.type] ?? node.type,
     levelLabel: LEVEL_LABELS[graphState.getNodeLevel(nodeId)] ?? "未分层",

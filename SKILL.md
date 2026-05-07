@@ -1,6 +1,6 @@
 ---
 name: relationship-network-simple
-description: Use when the user wants to quickly build or update a pure character-to-character relationship network using pre-provided character portrait assets from the current Cohub Space or workspace files. This simple variant only creates character nodes and character-to-character edges, and does not fetch or generate images externally.
+description: Use when the user wants to quickly build or update a pure character-to-character relationship network using pre-provided character portrait assets from the current Cohub Space or workspace files. This simple variant only creates character nodes and character-to-character edges, uses local portraits directly, and does not fetch, generate, or compress images.
 metadata:
   short-description: Fast character relationship network from Space portraits
 ---
@@ -9,13 +9,14 @@ metadata:
 
 This skill builds a **pure character relationship network** from local Space/workspace portraits.
 
-It is intentionally narrow:
+It is intentionally narrow and fast:
 
 - character nodes only
 - character-to-character relationships only
 - user-provided local portraits only
 - no external image search
 - no generated images
+- no image compression step
 
 Use this skill when speed matters and the user has already provided the character materials.
 
@@ -50,6 +51,7 @@ The output is an interactive browser page showing characters as nodes and relati
 - External image fetching
 - External image generation
 - Remote portrait hotlinking
+- Image compression / resizing workflow
 
 If the user asks for a broader graph, ask whether to switch to a different skill before proceeding.
 
@@ -65,7 +67,7 @@ Use a larger graph only when the user explicitly asks or provides a large struct
 
 ## Local Portrait Rules
 
-Character portraits must come from files already present in the current Space/workspace.
+Character portraits must come from files already present in the current Space/workspace. To keep generation fast, use the provided image files directly after copying them into the project.
 
 Recommended layout:
 
@@ -102,8 +104,7 @@ The report should include:
 - selected local file, if any
 - decision: `used`, `missing`, `ambiguous`, or `rejected`
 - reason
-- raw local path copied into the project
-- compressed thumb/card output paths
+- copied project path used by `node.image`
 
 ## Portrait Matching
 
@@ -125,7 +126,7 @@ Before delivery, pass or explicitly report these gates:
 1. **Character data gate**: every node is `type: "character"` and `zone: "character"`, has a stable id, display label, 50-100 Chinese character description, and optional aliases.
 2. **Relationship gate**: every edge is `relation: "character-character"`, connects two existing character nodes, and has a meaningful label.
 3. **Local portrait gate**: important characters use local portraits or have a `missing/ambiguous/rejected` entry in `reports/local-portrait-pass.json`.
-4. **Portrait compression gate**: every used portrait is compressed into `assets/portraits/thumb/` and `assets/portraits/card/`; `node.image` must point to the thumb file.
+4. **Direct local image gate**: used portraits are copied into the project, usually under `assets/portraits/`, and `node.image` points directly to that local copied file.
 5. **Theme cleanup gate**: no previous story names or unrelated UI copy remain visible.
 6. **Verification gate**: syntax checks, import validation, layout coverage, initial camera focus, and local HTTP asset checks pass.
 
@@ -137,7 +138,6 @@ Final response must mention:
 - relationship count
 - view count
 - local portrait pass summary
-- compression summary
 - missing/ambiguous portraits, if any
 - verification result
 
@@ -148,13 +148,12 @@ Final response must mention:
 3. Define character nodes and character-to-character edges.
 4. Create character-only views.
 5. Scan local portraits and write `reports/local-portrait-pass.json`.
-6. Copy selected raw portraits into `assets/portraits/`.
-7. Compress portraits.
-8. Wire `image`, `imageCard`, `imageSource`, and `imageCredit` into character nodes.
-9. Apply a simple visual theme.
-10. Update cache-busting versions.
-11. Run verification.
-12. Publish/share if requested.
+6. Copy selected portrait files into `assets/portraits/` without resizing or compression.
+7. Wire `image`, `imageSource`, and `imageCredit` into character nodes.
+8. Apply a simple visual theme.
+9. Update cache-busting versions.
+10. Run verification.
+11. Publish/share if requested.
 
 ## Base Template
 
@@ -192,8 +191,7 @@ When changing JS or CSS, update cache-busting versions in:
   importance: 100,
   aliases: ["别名", "English Name"],
   description: "关系网的中心人物，连接主要亲友、竞争者和敌对者。简介应说明其性格位置、关系压力与浏览入口作用。",
-  image: "./assets/portraits/thumb/core-character.webp",
-  imageCard: "./assets/portraits/card/core-character.webp",
+  image: "./assets/portraits/core-character.png",
   imageSource: "local:/workspace/uploads/core-character.png",
   imageCredit: "User-provided Space portrait"
 }
@@ -292,29 +290,23 @@ Subgraphs must contain only character nodes and character-character edges.
 
 Avoid dense unreadable hairballs. If there are too many characters, create smaller character-only subgraphs.
 
-## Portrait Compression Workflow
+## Local Image Wiring
 
-Do not wire raw uploaded images directly.
+Use the selected local portrait files directly. Copy them into the project to make the static page self-contained:
 
-From the project root:
-
-```bash
-python3 /workspace/skills/narrative-relationship-graph-space-assets/tools/compress_portraits.py assets/portraits
+```text
+assets/portraits/<character-id>.<ext>
 ```
-
-Output contract:
-
-- `assets/portraits/thumb/<character-id>.webp`: 256×256, used by graph nodes
-- `assets/portraits/card/<character-id>.webp`: 512×512, used by clicked cards
 
 Data wiring:
 
 ```js
-image: "./assets/portraits/thumb/<character-id>.webp",
-imageCard: "./assets/portraits/card/<character-id>.webp",
+image: "./assets/portraits/<character-id>.<ext>",
 imageSource: "local:/workspace/uploads/<original-file>",
 imageCredit: "User-provided Space portrait"
 ```
+
+Use only the copied local portrait file in this simple workflow.
 
 ## Verification
 
@@ -367,7 +359,7 @@ Check local serving:
 ```bash
 python3 -m http.server 8824
 curl -I 'http://127.0.0.1:8824/?v=<cache-version>'
-curl -I 'http://127.0.0.1:8824/assets/portraits/thumb/<character-id>.webp'
+curl -I 'http://127.0.0.1:8824/assets/portraits/<character-id>.<ext>'
 ```
 
 Verification checklist:
@@ -375,9 +367,10 @@ Verification checklist:
 - All nodes are characters.
 - All relationships are character-character.
 - Local portrait pass exists.
-- Used portraits are compressed and wired to `thumb/` paths.
+- Used portraits are copied locally and wired directly through `node.image`.
 - Missing portraits are reported, not fetched.
 - No external image acquisition was used.
+- No compression/resizing step was used.
 - Initial camera starts at overview distance and immediately focuses on the active root character.
 - Local HTTP returns 200 for the page and representative portraits.
 - Cache-busting versions changed.
@@ -386,7 +379,7 @@ Verification checklist:
 
 - **The graph includes non-character nodes**: remove them or switch to another workflow.
 - **The page tries to search or generate images**: stop; this skill only uses user-provided local portraits.
-- **Raw portraits are wired directly**: compress first and wire `thumb/`/`card/` assets.
+- **The workflow starts resizing portraits**: stop; this simple version wires copied local portraits directly.
 - **Portrait names are ambiguous**: record candidates and ask for clearer filenames.
 - **Initial page feels too close or off-center**: use the starter overview camera and immediately focus the active root after graph build.
 - **All relationship labels are visible**: restore hover/focus behavior unless the user requests always-on labels.
@@ -404,6 +397,5 @@ Keep final updates concise:
 - 关系：M
 - 视图：K
 - 本地头像：used / missing / ambiguous
-- 压缩：thumb/card completed
 - 验证：passed
 ```

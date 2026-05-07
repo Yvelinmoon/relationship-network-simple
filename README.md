@@ -7,8 +7,8 @@ This simple variant only supports:
 - character nodes
 - character-to-character edges
 - local user-provided portraits
-- compressed `thumb/` and `card/` portrait assets
+- direct local image wiring, no resizing/compression
 
-It intentionally does not fetch, search, or generate images.
+It intentionally does not fetch, search, generate, or compress images.
 
 Main skill file: `SKILL.md`

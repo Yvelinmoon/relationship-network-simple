@@ -19,22 +19,16 @@ Then:
 3. Keep every edge as `relation: "character-character"`.
 4. Update `src/main.js` import from `./data/story.js` to `./data/<story>.js`.
 5. Update `index.html` title and `aria-label`.
-6. Add raw portraits under `assets/portraits/`, then run:
-
-```bash
-python3 /workspace/skills/narrative-relationship-graph-space-assets/tools/compress_portraits.py assets/portraits
-```
-
-7. Use compressed portraits in data:
+6. Copy selected local portraits into `assets/portraits/` directly.
+7. Use the copied portraits in data:
 
 ```js
-image: "./assets/portraits/thumb/<character-id>.webp",
-imageCard: "./assets/portraits/card/<character-id>.webp"
+image: "./assets/portraits/<character-id>.<ext>"
 ```
 
 ## Design assumptions
 
 - Layout is character-only and data-driven from `importance`, graph degree, and view root.
 - Optional character colors come from `DATASET.characterGroups` and `node.group`.
-- `node.image` should point to a compressed thumb file.
-- `node.imageCard` is optional and used by clicked character cards.
+- `node.image` should point to a local file copied into the project.
+- No portrait resizing or compression step is used in this simple starter.
