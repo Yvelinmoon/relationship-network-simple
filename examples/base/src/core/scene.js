@@ -16,19 +16,7 @@ export function createScene(root) {
   root.appendChild(labelRenderer.domElement);
 
   const scene = new THREE.Scene();
-  const backgroundUrl = root?.dataset?.background || "./assets/graph-background.webp";
-  const backgroundTexture = new THREE.TextureLoader().load(
-    backgroundUrl,
-    undefined,
-    undefined,
-    () => {
-      scene.background = new THREE.Color(0x090a0d);
-    },
-  );
-  if (THREE.SRGBColorSpace) {
-    backgroundTexture.colorSpace = THREE.SRGBColorSpace;
-  }
-  scene.background = backgroundTexture;
+  scene.background = null;
   scene.fog = new THREE.Fog(0x090a0d, 1600, 4600);
 
   const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 1, 6200);
