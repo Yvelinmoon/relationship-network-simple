@@ -2,7 +2,6 @@ import { CSS2DObject } from "../../vendor/three/CSS2DRenderer.js?v=202604261755"
 
 const CURVE_SEGMENTS = 24;
 const EDGE_TUBE_RADIUS = 0.18;
-const EDGE_GLOW_RADIUS = 0.62;
 const EDGE_TUBE_RADIAL_SEGMENTS = 5;
 const INTRO_LAYER_STAGGER = 0.34;
 const INTRO_SWEEP_DURATION = 0.62;
@@ -69,14 +68,14 @@ function normalizeCharacterGroupStyles(groups) {
 }
 
 export function createGraphController({ THREE, groups, controls, typeMeta, graphState }) {
-  const { haloGroup, edgeGroup, nodeGroup, labelGroup } = groups;
+  const { edgeGroup, nodeGroup, labelGroup } = groups;
   CHARACTER_GROUP_STYLES = normalizeCharacterGroupStyles(graphState.getCharacterGroups?.() ?? FALLBACK_CHARACTER_GROUP_STYLES);
   CHARACTER_GROUP_IDS = new Set(Object.keys(CHARACTER_GROUP_STYLES));
   const worldTarget = new THREE.Vector3();
   const textureLoader = new THREE.TextureLoader();
   textureLoader.crossOrigin = "anonymous";
   const orbAlphaTexture = makeCircleAlphaTexture();
-  const glintTexture = makeGlintTexture();
+
   const characterGroupAffiliations = buildCharacterGroupAffiliations();
 
   let graph = null;
@@ -168,22 +167,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     return texture;
   }
 
-  function makeGlintTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 128;
-    canvas.height = 128;
-    const context = canvas.getContext("2d");
-    const gradient = context.createRadialGradient(42, 34, 2, 42, 34, 54);
-    gradient.addColorStop(0, "rgba(255,248,222,0.82)");
-    gradient.addColorStop(0.32, "rgba(255,248,222,0.28)");
-    gradient.addColorStop(1, "rgba(255,248,222,0)");
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 128, 128);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-  }
-
   function makeTopSquareAvatarTexture(sourceTexture) {
     const image = sourceTexture.image;
     const width = image?.naturalWidth || image?.videoWidth || image?.width;
@@ -250,55 +233,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     return sprite;
   }
 
-  function makeCrystalCore(meta, hasImage) {
-    const geometry = new THREE.SphereGeometry(meta.size * (hasImage ? 0.62 : 0.72), 24, 24);
-    const material = new THREE.MeshBasicMaterial({
-      color: meta.color,
-      transparent: true,
-      opacity: hasImage ? 0.08 : 0.38,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    const core = new THREE.Mesh(geometry, material);
-    core.renderOrder = 24;
-    core.userData.baseOpacity = hasImage ? 0.08 : 0.38;
-    return core;
-  }
-
-  function makeCrystalRim(meta) {
-    const geometry = new THREE.SphereGeometry(meta.size * 1.08, 32, 32);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffc0a0,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-    });
-    const rim = new THREE.Mesh(geometry, material);
-    rim.renderOrder = 32;
-    rim.userData.baseOpacity = 0.26;
-    return rim;
-  }
-
-  function makeCrystalGlint(meta) {
-    const material = new THREE.SpriteMaterial({
-      map: glintTexture,
-      color: 0xffc890,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    const glint = new THREE.Sprite(material);
-    glint.position.set(-meta.size * 0.28, meta.size * 0.32, meta.size * 0.72);
-    glint.scale.set(meta.size * 1.34, meta.size * 1.34, 1);
-    glint.renderOrder = 34;
-    glint.userData.baseOpacity = 0.46;
-    return glint;
-  }
-
-
   function buildCurvePointsForRelation(relation, start, end) {
     const style = RELATION_STYLE[relation] ?? RELATION_STYLE["character-character"];
     const midpoint = start.clone().lerp(end, 0.5);
@@ -329,17 +263,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       false,
     );
     edgeObject.mesh.geometry.computeBoundingSphere();
-    if (edgeObject.glowMesh) {
-      edgeObject.glowMesh.geometry.dispose();
-      edgeObject.glowMesh.geometry = new THREE.TubeGeometry(
-        curve,
-        CURVE_SEGMENTS,
-        EDGE_GLOW_RADIUS,
-        EDGE_TUBE_RADIAL_SEGMENTS,
-        false,
-      );
-      edgeObject.glowMesh.geometry.computeBoundingSphere();
-    }
     edgeObject.label.position.copy(curve.getPoint(0.5));
     edgeObject.label.position.z += 10;
   }
@@ -352,7 +275,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     graph.nodeMeshes.forEach((mesh) => {
       const basePosition = graphState.getNodePosition(mesh.userData.node.id);
       mesh.position.copy(basePosition);
-      mesh.userData.halo.position.copy(basePosition);
       const label = mesh.userData.label;
       if (label) {
         label.position.z = typeMeta[mesh.userData.node.type].size + 18;
@@ -372,7 +294,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     const neighbors = graphState.getNeighborsMap();
 
     clearGroup(edgeGroup);
-    clearGroup(haloGroup);
     clearGroup(nodeGroup);
     clearGroup(labelGroup);
 
@@ -380,55 +301,23 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       const meta = getNodeVisualMeta(node);
       const position = graphState.getNodePosition(node.id).clone();
 
-      const haloGeometry = new THREE.SphereGeometry(meta.size * 1.55, 24, 24);
-      const haloMaterial = new THREE.MeshBasicMaterial({
-        color: meta.color,
-        transparent: true,
-        opacity: 0.12,
-        depthWrite: false,
-      });
-      const halo = new THREE.Mesh(haloGeometry, haloMaterial);
-      halo.position.copy(position);
-      halo.userData.nodeId = node.id;
-      halo.renderOrder = 20;
-      haloGroup.add(halo);
-
       const geometry = new THREE.SphereGeometry(meta.size, 28, 28);
-      const material = new THREE.MeshPhysicalMaterial({
+      const material = new THREE.MeshBasicMaterial({
         color: meta.color,
-        emissive: meta.color,
-        emissiveIntensity: 0.22,
-        roughness: 0.12,
-        metalness: 0.02,
         transparent: true,
-        opacity: 0.42,
+        opacity: 0.72,
         depthWrite: false,
-        clearcoat: 1,
-        clearcoatRoughness: 0.025,
-        ior: 1.5,
-        reflectivity: 0.86,
-        transmission: 0.36,
-        thickness: meta.size * 0.62,
-        specularIntensity: 1.5,
-        specularColor: 0xfff1c8,
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.copy(position);
       mesh.userData.node = node;
       mesh.userData.baseScale = 1;
-      mesh.userData.halo = halo;
-      mesh.userData.crystalCore = makeCrystalCore(meta, Boolean(node.image));
       mesh.userData.imageSprite = makeImageSprite(node, meta);
-      mesh.userData.crystalRim = makeCrystalRim(meta);
-      mesh.userData.glint = makeCrystalGlint(meta);
       mesh.userData.label = makeNodeLabel(node);
       mesh.renderOrder = 30;
-      mesh.add(mesh.userData.crystalCore);
       if (mesh.userData.imageSprite) {
         mesh.add(mesh.userData.imageSprite);
       }
-      mesh.add(mesh.userData.crystalRim);
-      mesh.add(mesh.userData.glint);
       mesh.add(mesh.userData.label);
       nodeGroup.add(mesh);
 
@@ -442,22 +331,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
 
       const relationStyle = RELATION_STYLE[edge.relation] ?? RELATION_STYLE["character-character"];
       const { curve } = buildCurvePointsForRelation(edge.relation, sourceMesh.position, targetMesh.position);
-      const glowGeometry = new THREE.TubeGeometry(curve, CURVE_SEGMENTS, EDGE_GLOW_RADIUS, EDGE_TUBE_RADIAL_SEGMENTS, false);
-      const glowMaterial = new THREE.MeshBasicMaterial({
-        color: relationStyle.color,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        depthTest: false,
-        fog: false,
-        blending: THREE.AdditiveBlending,
-      });
-      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-      glowMesh.userData.edge = edge;
-      glowMesh.renderOrder = 9;
-      glowMesh.frustumCulled = false;
-      edgeGroup.add(glowMesh);
-
       const geometry = new THREE.TubeGeometry(curve, CURVE_SEGMENTS, EDGE_TUBE_RADIUS, EDGE_TUBE_RADIAL_SEGMENTS, false);
       const material = new THREE.MeshBasicMaterial({
         color: relationStyle.color,
@@ -476,7 +349,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       const label = makeEdgeLabel(edge, sourceMesh.position, targetMesh.position);
       labelGroup.add(label);
 
-      const edgeObject = { ...edge, mesh, glowMesh, label };
+      const edgeObject = { ...edge, mesh, label };
       updateEdgeCurve(edgeObject, sourceMesh.position, targetMesh.position);
       return edgeObject;
     });
@@ -561,10 +434,7 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     return {
       scale: tier === 4 ? 1.36 : tier === 3 ? 1.16 : tier === 2 ? 0.84 : tier === 1 ? 0.88 : 0.8,
       opacity: tier === 4 ? 1 : tier === 3 ? 0.98 : tier === 2 ? 0.44 : tier === 1 ? 0.46 : 0.22,
-      emissive: tier === 4 ? 0.46 : tier === 3 ? 0.28 : tier === 2 ? 0.055 : tier === 1 ? 0.075 : 0.028,
       labelOpacity: tier === 4 ? 1 : tier === 3 ? 0.96 : tier === 2 ? 0.24 : tier === 1 ? 0.36 : 0.14,
-      haloOpacity: tier === 4 ? 0.26 : tier === 3 ? 0.14 : tier === 2 ? 0.012 : tier === 1 ? 0.018 : 0.006,
-      haloScale: tier >= 3 ? 1.06 : 0.92,
     };
   }
 
@@ -623,27 +493,10 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
     return clamp01(Math.min(sourceReveal, targetReveal) - INTRO_EDGE_LAG);
   }
 
-  function getCrystalShellOpacity(opacity) {
-    return Math.min(opacity * 0.56, 0.58);
-  }
-
-  function applyCrystalLayerState(mesh, opacity, haloOpacity, reveal) {
-    const core = mesh.userData.crystalCore;
+  function applyImageLayerState(mesh, opacity, reveal) {
     const imageSprite = mesh.userData.imageSprite;
-    const rim = mesh.userData.crystalRim;
-    const glint = mesh.userData.glint;
-
-    if (core) {
-      core.material.opacity = core.userData.baseOpacity * Math.min(opacity + 0.18, 1) * reveal;
-    }
     if (imageSprite) {
       imageSprite.material.opacity = imageSprite.userData.baseOpacity * Math.min(opacity + 0.08, 1) * reveal;
-    }
-    if (rim) {
-      rim.material.opacity = rim.userData.baseOpacity * Math.min(haloOpacity * 2.4 + opacity * 0.34, 1) * reveal;
-    }
-    if (glint) {
-      glint.material.opacity = glint.userData.baseOpacity * Math.min(haloOpacity * 3.2 + 0.08, 1) * reveal;
     }
   }
 
@@ -666,14 +519,9 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
 
       if (!activeIds.size) {
         mesh.scale.setScalar(baseVisual.scale * introScale);
-        mesh.material.emissiveIntensity = baseVisual.emissive + (nodeId === graphState.rootId ? (1 - reveal) * 0.34 : 0);
-        mesh.material.opacity = getCrystalShellOpacity(baseVisual.opacity) * reveal;
+        mesh.material.opacity = Math.min(baseVisual.opacity, 0.86) * reveal;
         mesh.material.transparent = true;
-        mesh.userData.halo.material.opacity = baseVisual.haloOpacity * reveal;
-        mesh.userData.halo.scale.setScalar(
-          baseVisual.haloScale * (0.72 + reveal * 0.28) * (nodeId === graphState.rootId ? 1 + (1 - reveal) * 0.48 : 1),
-        );
-        applyCrystalLayerState(mesh, baseVisual.opacity, baseVisual.haloOpacity, reveal);
+        applyImageLayerState(mesh, baseVisual.opacity, reveal);
         if (labelElement) {
           labelElement.style.opacity = `${baseVisual.labelOpacity * reveal}`;
         }
@@ -705,24 +553,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
               : hasIsolatedFocus
                 ? 0.008
                 : 0.08;
-      const emissive = isSelected
-        ? 1.02
-        : isActive
-          ? 0.84
-          : isFirstHop
-            ? 0.28
-            : isSecondHop
-              ? (hasIsolatedFocus ? 0.035 : 0.08)
-              : (hasIsolatedFocus ? 0.004 : baseVisual.emissive * 0.55);
-      const haloOpacity = isSelected
-        ? 0.5
-        : isActive
-          ? 0.38
-          : isFirstHop
-            ? 0.13
-            : isSecondHop
-              ? (hasIsolatedFocus ? 0.01 : 0.035)
-              : (hasIsolatedFocus ? 0 : baseVisual.haloOpacity * 0.36);
       const labelOpacity = isSelected
         ? 1
         : isActive
@@ -734,16 +564,9 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
               : (hasIsolatedFocus ? 0 : baseVisual.labelOpacity * 0.48);
 
       mesh.scale.setScalar(scale * introScale);
-      mesh.material.emissiveIntensity = emissive + (nodeId === graphState.rootId ? (1 - reveal) * 0.34 : 0);
-      mesh.material.opacity = getCrystalShellOpacity(opacity) * reveal;
+      mesh.material.opacity = Math.min(opacity, 0.92) * reveal;
       mesh.material.transparent = true;
-      mesh.userData.halo.material.opacity = haloOpacity * reveal;
-      mesh.userData.halo.scale.setScalar(
-        (isSelected ? 1.5 : isActive ? 1.3 : isFirstHop ? 1.12 : isSecondHop ? 1.02 : baseVisual.haloScale) *
-          (0.72 + reveal * 0.28) *
-          (nodeId === graphState.rootId ? 1 + (1 - reveal) * 0.48 : 1),
-      );
-      applyCrystalLayerState(mesh, opacity, haloOpacity, reveal);
+      applyImageLayerState(mesh, opacity, reveal);
       if (labelElement) {
         labelElement.style.opacity = `${labelOpacity * reveal}`;
         labelElement.classList.toggle("active", isActive);
@@ -758,8 +581,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
       if (!activeIds.size) {
         edge.mesh.material.opacity = getBaseEdgeOpacity(edge) * reveal;
         edge.mesh.material.color.setHex(style.color);
-        edge.glowMesh.material.opacity = 0;
-        edge.glowMesh.material.color.setHex(style.activeColor);
         edge.label.visible = false;
         edge.label.element.style.setProperty("--edge-accent", style.cssColor);
         edge.label.element.classList.toggle("visible", false);
@@ -780,8 +601,6 @@ export function createGraphController({ THREE, groups, controls, typeMeta, graph
             : Math.max(getBaseEdgeOpacity(edge) * 0.42, 0.025);
       edge.mesh.material.opacity = opacity * reveal;
       edge.mesh.material.color.setHex(isDirectEdge ? style.activeColor : style.color);
-      edge.glowMesh.material.opacity = (isDirectEdge ? 0.14 : 0) * reveal;
-      edge.glowMesh.material.color.setHex(style.activeColor);
       const activeLabelVisible = isDirectEdge && reveal > 0.92;
       edge.label.visible = activeLabelVisible;
       edge.label.element.style.setProperty("--edge-accent", style.cssColor);
